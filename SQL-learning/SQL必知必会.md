@@ -67,6 +67,7 @@
 	SELECT column1, column2
 	FROM table
 	WHERE condition
+``` 
 ![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/12.xmind.png)
 ## 13. 存储过程 Stored Procedure
 ``` stylus
