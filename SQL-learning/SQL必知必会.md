@@ -8,21 +8,26 @@
 	SQL 保留字、函数名、绑定变量等都大写
 ``` 
 ![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/01.xmind.png)
-![](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/01.xmind.png)
+## 02.
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/02.xmind.png)
+## 03.
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/03.xmind.png)
 ## 04. DDL
 ``` stylus
 	唯一索引和普通索引的区别在于它对字段进行了唯一性的约束
 	索引方式：BTREE , HASH
 	字段约束：主键、外键、唯一性、NOT NULL、DEFAULT、CHECK约束
 ```    
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/04.xmind.png)
 ## 05. SELECT
 ``` stylus
 	Oracle排序: SELECT name, hp_max FROM (SELELECT name,hp_max FROM heros ORDER BY hp_max) WHERE ROWNUM <= 5
 	关键字顺序：SELECT ... FROM ... WHERE ... GROUP BY ... HAVING ... 0RDER BY ...
 	执行顺序：FROM > WHERE > GROUP BY > HAVING > SELECT > DISTINCT > ORDER BY > LIMIT 
 ``` 
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/05.xmind.png)
 ## 06. WHERE 数据过滤，尽量少用 LIKE '%太'
-	
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/06.xmind.png)
 ## 07. SQL函数
 ``` stylus
 	算数函数
@@ -30,6 +35,7 @@
 	日期函数
 	转换函数
 ``` 	
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/07.xmind.png)
 ## 08. 聚集函数：输入一组数据的集合，输出单个值
 ``` stylus
 	COUNT()
@@ -41,7 +47,7 @@
 	SQL: SELECT COUNT(*) as num, role_main, role_assist FROM heros GROUP BY role_main, role_assist HAVING num > 5 ORDER BY num DESC
 	SQL: SELECT COUNT(*) as num, role_main, role_assist FROM heros WHERE hp_max > 6000 GROUP BY role_main, role_assist HAVING num > 5 ORDER BY num DESC
 ```
-
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/08.xmind.png)
 ## 09. 子查询：从查询结果集中再次进行查询 EXISTS IN SOME ANY ALL
 ``` stylus
 	非关联子查询：SELECT player_name, height FROM player WHERE height = (SELECT max(height) FROM player)
@@ -54,13 +60,14 @@
 	SQL: SELECT player_id, player_name, height FROM player WHERE height > ALL (SELECT height FROM player WHERE team_id = 1002)
 	SQL: SELECT team_name, (SELECT count(*) FROM player WHERE player.team_id = team.team_id) AS player_num FROM team
 ``` 
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/09.xmind.png)
 ## 12. 视图VIEW
 ``` stylus
 	CREATE VIEW view_name AS
 	SELECT column1, column2
 	FROM table
 	WHERE condition
-	
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/12.xmind.png)
 ## 13. 存储过程 Stored Procedure
 ``` stylus
 	DELIMITER //
@@ -78,6 +85,7 @@
 CALL get_hero_scores(@max_max_hp, @min_max_mp, @avg_max_attack, '战士');
 SELECT @max_max_hp, @min_max_mp, @avg_max_attack;
 ``` 
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/13.xmind.png)
 
 
 
