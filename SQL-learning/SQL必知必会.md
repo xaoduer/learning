@@ -7,8 +7,8 @@
 	表名、表别名、字段名、字段别名等都小写；
 	SQL 保留字、函数名、绑定变量等都大写
 ``` 
-![Image of Yaktocat](https://github.com/xaoduer/learning/blob/master/SQL-learning/01.xmind.png)
-
+![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/01.xmind.png)
+![](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/01.xmind.png)
 ## 04. DDL
 ``` stylus
 	唯一索引和普通索引的区别在于它对字段进行了唯一性的约束
