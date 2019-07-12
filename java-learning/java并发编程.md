@@ -10,18 +10,18 @@
 	3 编译程序优化指令执行次序，使得缓存能够够得到更加合理地利用
 	
 ### 源头一：缓存导致的可见性问题
-	![CPU缓存与内存的关系-单核](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E5%8D%95CPU.png)
-	![CPU缓存与内存的关系-多核](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E5%A4%9ACPU.png)
+![CPU缓存与内存的关系-单核](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E5%8D%95CPU.png)
+![CPU缓存与内存的关系-多核](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E5%A4%9ACPU.png)
 	
 ### 源头二：线程切换带来的原子性问题
 	
-	我们把一个或多个操作在CPU执行过程中不被中断的特性称为原子性
-	count += 1
-		* 指令1：首先，需要把变量count从内存加载到CPU的寄存器
-		* 指令2：之后，在寄存器中执行+1操作
-		* 指令3：最后，将结果写入内存（缓存机制导致可能写入的是CPU缓存而不是内存）
-	![线程切换](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2.png)
-	![非原子操作执行路径示意图](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E9%9D%9E%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C.png)
+我们把一个或多个操作在CPU执行过程中不被中断的特性称为原子性
+count += 1
+* 指令1：首先，需要把变量count从内存加载到CPU的寄存器
+* 指令2：之后，在寄存器中执行+1操作
+* 指令3：最后，将结果写入内存（缓存机制导致可能写入的是CPU缓存而不是内存）
+![线程切换](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2.png)
+![非原子操作执行路径示意图](https://github.com/xaoduer/learning/blob/master/java-learning/java-concurrent-png/01.%E9%9D%9E%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C.png)
 	
 ### 源头三：编译优化带来的有序性问题
 	编译器为了优化性能，有时候会改变程序中语句的先后顺序
