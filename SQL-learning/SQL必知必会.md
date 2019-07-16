@@ -88,8 +88,16 @@ SELECT @max_max_hp, @min_max_mp, @avg_max_attack;
 ``` 
 ![Image of xmind](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/13.xmind.png)
 
+## 14.事务处理
+1.A，A，也就是原子性（Atomicity）。原子的概念就是不可分割，你可以把它理解为组成物质的基本单位  
+2.C，一致性，Consistency，事务提交前后，数据库的完整性约束不能被破坏  
+3.I，Isolation，一个事务在提交之前，对其它事务都是不可见的  
+4.D,持久性Durability,事务提交后对数据的修改是持久性的，保存到日志或者磁盘  
+![xmid](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/14.xmind.png)
 
+## 15.事务隔离级别
 
+![xmid](https://github.com/xaoduer/learning/blob/master/SQL-learning/SQL-png1/15.xmind.png)
 
 	
 	
