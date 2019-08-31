@@ -1,0 +1,210 @@
+​1.Resilience4j是一款受Hystrix启发的轻量级容错保护工具类库，主要为java8函数编程设计。
+
+2.核心模块:
+resilience4j-circuitbreaker: Circuit breaking
+resilience4j-ratelimiter: Rate limiting
+resilience4j-bulkhead: Bulkheading
+resilience4j-retry: Automatic retrying (sync and async)
+resilience4j-cache: Response caching
+resilience4j-timelimiter: Timeout handling
+
+扩展模块
+resilience4j-metrics: Dropwizard Metrics exporter
+resilience4j-prometheus: Prometheus Metrics exporter
+resilience4j-spring-boot: Spring Boot Starter
+resilience4j-ratpack: Ratpack Starter
+resilience4j-retrofit: Retrofit Call Adapter Factories
+resilience4j-vertx: Vertx Future decorator
+resilience4j-consumer: Circular Buffer Event consumer
+
+3.下面主要通过测试代码说明如何使用java8新特性使用Api
+
+
+// 构建定制CircuitBreakerConfig
+CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+    .failureRateThreshold(50)
+    .waitDurationInOpenState(Duration.ofMillis(1000))
+    .ringBufferSizeInHalfOpenState(2)
+    .ringBufferSizeInClosedState(2)
+    .build();
+
+// 使用circuitBreakerConfig构建CircuitBreakerRegistry
+CircuitBreakerRegistry circuitBreakerRegistry = CircuitBreakerRegistry.of(circuitBreakerConfig);
+
+// 使用circuitBreakerRegistry的配置构建CircuitBreaker
+CircuitBreaker circuitBreaker2 = circuitBreakerRegistry.circuitBreaker("otherName");
+
+// 使用自定义的circuitBreakerConfig构建CircuitBreaker
+CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker("uniqueName", circuitBreakerConfig);
+
+
+
+
+CircuitBreaker defauktCircuitBreaker = CircuitBreaker.ofDefaults("testName");
+
+CircuitBreaker customCircuitBreaker = CircuitBreaker.of("testName", circuitBreakerConfig);
+、
+
+// Given
+CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("testName");
+
+// When I decorate my function
+CheckedFunction0<String> decoratedSupplier = CircuitBreaker
+        .decorateCheckedSupplier(circuitBreaker, () -> "This can be any method which returns: 'Hello");
+
+// and chain an other function with map
+Try<String> result = Try.of(decoratedSupplier)
+                .map(value -> value + " world'");
+
+// Then the Try Monad returns a Success<String>, if all functions ran successfully.
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("This can be any method which returns: 'Hello world'");
+
+
+// Given
+CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("testName");
+CircuitBreaker anotherCircuitBreaker = CircuitBreaker.ofDefaults("anotherTestName");
+
+// 使用不同的CircuitBreaker分别包装Supplier和Function
+CheckedFunction0<String> decoratedSupplier = CircuitBreaker
+        .decorateCheckedSupplier(circuitBreaker, () -> "Hello");
+
+CheckedFunction1<String, String> decoratedFunction = CircuitBreaker
+        .decorateCheckedFunction(anotherCircuitBreaker, (input) -> input + " world");
+
+// 连接两个被CircuitBreaker包装过的方法
+Try<String> result = Try.of(decoratedSupplier)
+        .mapTry(decoratedFunction::apply);
+
+// Then
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("Hello world");
+
+
+<dependency>
+	<groupId>io.github.resilience4j</groupId>
+	<artifactId>resilience4j-spring-boot</artifactId>
+	<version>0.11.0</version>
+	<scope>compile</scope>
+</dependency>
+
+<dependency>
+	<groupId>io.github.resilience4j</groupId>
+	<artifactId>resilience4j-retrofit</artifactId>
+	<version>0.11.0</version>
+</dependency>
+
+        this.circuitBreaker = CircuitBreaker.of("test", circuitBreakerConfig);
+
+        final long TIMEOUT = 300; // ms
+        final OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .readTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+                .build();
+
+        this.service = new Retrofit.Builder()
+                .addCallAdapterFactory(CircuitBreakerCallAdapter.of(circuitBreaker))
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .baseUrl("http://localhost:8080/")
+                .client(client)
+                .build()
+                .create(RetrofitService.class);
+			
+        private Integer limitForPeriod;
+        private Integer limitRefreshPeriodInMillis;
+        private Integer timeoutInMillis;
+		
+// 限制<= 10 req/ms.
+RateLimiterConfig config = RateLimiterConfig.builder()
+    .limitRefreshPeriod(Duration.ofMillis(1))
+    .limitForPeriod(10)
+    .timeoutDuration(Duration.ofMillis(25))
+    .build();
+
+// Create registry
+RateLimiterRegistry rateLimiterRegistry = RateLimiterRegistry.of(config);
+
+// Use registry
+RateLimiter reateLimiterWithDefaultConfig = rateLimiterRegistry.rateLimiter("backend");
+RateLimiter reateLimiterWithCustomConfig = rateLimiterRegistry.rateLimiter("backend#2", config);
+
+// 或者直接创建RateLimiter
+RateLimiter rateLimiter = RateLimiter.of("NASDAQ :-)", config);		
+
+
+
+
+CheckedRunnable restrictedCall = RateLimiter
+    .decorateCheckedRunnable(rateLimiter, backendService::doSomething);
+
+Try.run(restrictedCall)
+    .andThenTry(restrictedCall)
+    .onFailure((RequestNotPermitted throwable) -> LOG.info("Wait before call it again :)"));
+	
+	
+// 定制配置参数
+BulkheadConfig config = BulkheadConfig.custom()
+                                      .maxConcurrentCalls(150)
+                                      .maxWaitTime(100)
+                                      .build();
+
+// 创建全局BulkheadRegistry
+BulkheadRegistry registry = BulkheadRegistry.of(config);
+
+// 创建Bulkhead
+Bulkhead bulkhead1 = registry.bulkhead("foo");
+
+// 个性化定制配置参数
+BulkheadConfig custom = BulkheadConfig.custom()
+                                      .maxWaitTime(0)
+                                      .build();
+
+Bulkhead bulkhead2 = registry.bulkhead("bar", custom);
+
+Bulkhead bulkhead1 = Bulkhead.ofDefaults("foo");
+
+Bulkhead bulkhead2 = Bulkhead.of(
+                         "bar",
+                         BulkheadConfig.custom()
+                                       .maxConcurrentCalls(50)
+                                       .build()
+                     );
+					 
+// Given
+Bulkhead bulkhead = Bulkhead.of("testName", config);
+
+// When I decorate my function
+CheckedFunction0<String> decoratedSupplier = Bulkhead.decorateCheckedSupplier(bulkhead, () -> "This can be any method which returns: 'Hello");
+
+// and chain an other function with map
+Try<String> result = Try.of(decoratedSupplier)
+                        .map(value -> value + " world'");
+
+// Then the Try Monad returns a Success<String>, if all functions ran successfully.
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("This can be any method which returns: 'Hello world'");
+assertThat(bulkhead.getMetrics().getAvailableConcurrentCalls()).isEqualTo(1);
+
+
+
+// 创建Bulkhead
+Bulkhead bulkhead = Bulkhead.of("test", config);
+Bulkhead anotherBulkhead = Bulkhead.of("testAnother", config);
+
+// 装饰方法
+CheckedFunction0<String> decoratedSupplier
+    = Bulkhead.decorateCheckedSupplier(bulkhead, () -> "Hello");
+
+CheckedFunction1<String, String> decoratedFunction
+    = Bulkhead.decorateCheckedFunction(anotherBulkhead, (input) -> input + " world");
+
+// 连接调用
+Try<String> result = Try.of(decoratedSupplier)
+                        .mapTry(decoratedFunction::apply);
+
+// 结果验证
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("Hello world");
+assertThat(bulkhead.getMetrics().getAvailableConcurrentCalls()).isEqualTo(1);
+assertThat(anotherBulkhead.getMetrics().getAvailableConcurrentCalls()).isEqualTo(1);

@@ -1,0 +1,90 @@
+解决Git闪退:
+
+首先要确认你安装的版本和你电脑的版本是一样的。
+然后进入Git安装目录
+如C:\Program Files\Git\usr\bin
+将 msys-2.0.dll拷贝到上一级目录，
+然后在原来的usr\bin目录下执行下面命令
+rebase -b 0x76000000  ..\msys-2.0.dll
+rebase -b 0x30000000 ..\msys-2.0.dll
+然后再拷贝回去替换这个DLL文件。就可以打开git bash
+
+
+
+config 配置指令:
+
+git config
+　　
+config 配置有system级别 global（用户级别） 和local（当前仓库）三个 设置先从system-》global-》local  底层配置会覆盖顶层配置 分别使用--system/global/local 可以定位到配置文件
+
+查看系统config
+git config --system --list　
+
+查看当前用户（global）配置
+git config --global  --list
+ 
+查看当前仓库配置信息
+git config --local  --list
+
+由此可见--global中存储了提交用户的email和用户名 如果需要手动设置则可以使用如下指令
+
+
+git config --global user.name "myname"
+git config --global user.email  "test@gmail.com"
+
+
+git批量添加文件:
+git add xx命令可以将xx文件添加到暂存区，如果有很多改动可以通过 git add -A .来一次添加所有改变的文件。
+
+注意 -A 选项后面还有一个句点。 git add -A表示添加所有内容， git add . 表示添加新文件和编辑过的文件不包括删除的文件; git add -u 表示添加编辑或者删除的文件，不包括新添加的文件
+
+
+git配置别名：
+git config --global alias.st status
+
+
+
+If your git aborted with “filename too long” message you need to follow steps below to fix it
+
+
+However, according to later ticket #122 the problem has been fixed in msysgit 1.9, thus:
+
+Update to msysgit 1.9 (or later)
+Launch Git Bash
+Got to your Git repository which ‘suffers’ of long paths issue
+Enable long paths support with git config core.longpaths true
+
+
+在git push的时候，有时候我们会想办法撤销git commit的内容 
+1、找到之前提交的git commit的id 
+git log 
+找到想要撤销的id 
+2、git reset -–hard id 
+完成撤销,同时将代码恢复到前一commit_id 对应的版本 
+3、git reset id 
+完成Commit命令的撤销，但是不对代码修改进行撤销，可以直接通过git commit 重新提交对本地代码的修改
+
+删除本地重新pull
+git reset HEAD IOCContainerBootstraper.java
+git checkout IOCContainerBootstraper.java
+
+git help --web log
+git add -u
+git reset --hard
+git mv read read.md
+git log -n4 --oneline
+git log --all --graph
+git branch -v
+git branch brach_name <commitid>
+git checkout -b tmp <commitid>
+git checkout master
+
+git diff --cached //暂存区和HEAD的差别
+git diff //工作区和暂存区的区别
+git diff -- 文件名
+
+git reset HEAD 恢复暂存区与HEAD一致
+git checkout  -- index.html  //恢复工作区与暂存区一致
+
+
+ 

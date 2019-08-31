@@ -1,0 +1,17 @@
+gradle -q projects
+gradle -q tasks --all
+
+
+1	gradle –q help –task	提供有关指定任务或多个任务的使用信息（如路径，类型，描述，组）。
+2	gradle –q dependencies	提供所选项目的依赖关系的列表。
+3	gradle -q api:dependencies —configuration	提供有关配置的有限依赖项的列表。
+4	gradle –q buildEnvironment	提供构建脚本依赖项的列表
+5	gradle –q dependencyInsight	提供了一个洞察到一个特定的依赖
+6	gradle –q properties	提供所选项目的属性列表
+
+
+D:/worksp/gradle> gradle tasks
+....
+D:/worksp/gradle> gradle assemble
+....
+D:/worksp/gradle> gradle build

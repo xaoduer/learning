@@ -1,0 +1,23 @@
+eclipse使用lombok
+http://blog.csdn.net/linbilin_/article/details/50604936
+
+
+windows环境
+
+1.下载lombok.jar包https://projectlombok.org/download.html
+2.运行Lombok.jar: java -jar D:\software\lombok.jar D:\software\lombok.jar这是windows下lombok.jar所在的位置
+    数秒后将弹出一框，以确认eclipse的安装路径
+3.确认完eclipse的安装路径后，点击install/update按钮，即可安装完成
+4.安装完成之后，请确认eclipse安装路径下是否多了一个lombok.jar包，并且其
+配置文件eclipse.ini中是否 添加了如下内容: 
+    -javaagent:lombok.jar 
+    -Xbootclasspath/a:lombok.jar 
+如果上面的答案均为true，那么恭喜你已经安装成功，否则将缺少的部分添加到相应的位置即可 
+5.重启eclipse或myeclipse
+ubuntu环境
+
+基本步骤和上面一样，在第二步
+2.执行 java -jar /home/user/software/eclipse/lombok.jar /home/user/software/eclipse/lombok.jar是我的lombok.jar所在的目录。我的eclipse是安装在
+/home/user/software/eclipse/目录下
+执行完成之后，查看eclipse.ini文件查看：
+    -javaagent:/home/user/software/eclipse/lombok.jar

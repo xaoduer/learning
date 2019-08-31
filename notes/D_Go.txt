@@ -1,0 +1,7 @@
+godoc -http=:8080
+godoc strings
+go doc tar
+
+go build -a 强制编译
+go build -x 查看具体执行了哪些操作
+go build -n 查看具体操作而不执行

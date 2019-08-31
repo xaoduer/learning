@@ -1,0 +1,463 @@
+1.Introduction
+Resilience4j受启发于Netflix Hystrix，是一款轻量，简单易用的容错保护工具类库，主要为java8函数编程设计。
+不同于Hystrix，Resilience4j使用时按需选择合适的模块（如CircuitBreaker,RateLimiter,BulkHead）。
+
+核心模块:
+
+resilience4j-circuitbreaker: Circuit breaking
+
+resilience4j-ratelimiter: Rate limiting
+
+resilience4j-bulkhead: Bulkheading
+
+resilience4j-retry: Automatic retrying (sync and async)
+
+resilience4j-cache: Response caching
+
+resilience4j-timelimiter: Timeout handling
+
+扩展模块
+
+resilience4j-metrics: Dropwizard Metrics exporter
+
+resilience4j-prometheus: Prometheus Metrics exporter
+
+resilience4j-spring-boot: Spring Boot Starter
+
+resilience4j-ratpack: Ratpack Starter
+
+resilience4j-retrofit: Retrofit Call Adapter Factories
+
+resilience4j-vertx: Vertx Future decorator
+
+resilience4j-consumer: Circular Buffer Event consumer
+
+
+下面列举出与Netflix Hystrix主要的不同之处:
+Hystrix调用外部系统必须包裹在一个HystrixCommand中。而resilience4j则通过在各模块中提供高阶函数（decorators）
+来强化对函数式接口，lambda表达式和方法引用的调用。
+此外，resilience4j提供decorators 请求重试或将调用结果缓存。你可以在函数式接口上装饰多个decorator ，Lambda表达式或方法引用。
+这意味着你可以在一个CircuitBreaker decorator上同时使用Bulkhead,RateLimiter和Retry decorator。便于定制化decorator。
+同时，所有装饰的函数都可以通过 CompletableFuture or RxJava选择同步或异步执行。
+
+Hystrix默认将执行结果存储在10个1s的时间窗口，如果一个时间窗口（1s）过期，将创建一个新的窗口并删除最老的。
+而resilience4j则将结果存储在一个环形Bit缓冲池中。调用成功存0，失败存1。环形缓冲池大小可配置，并使用long[]存储。
+这意味着Ring Bit Buffer仅需要16个long类型数据便可存储1024个请求的状态。这样的优点是使CircuitBreaker对高或低频率的后台系统
+开箱即用，因其执行结果并没有被删除。
+
+在Half-open状态时，Hystrix 仅提供了单一的可执行策略来决定是否关闭CircuitBreaker。而resilience4j提供了大小可配置
+的策略，将统计结果与配置的阈值对比以确定是否关闭CircuitBreaker。
+
+resilience4j在Circuit Breaker, Bulkhead or Ratelimiter中提供定制化的RxJava operators来装饰Observable或Flowable
+
+
+2. Getting started
+项目依赖Jdk8并且已被发布于Jcenter和Maven Central。
+	警示：The groupId has been changed from io.github.robwin to io.github.resilience4j
+
+2.1. Gradle
+2.1.1. Release
+repositories {
+    jCenter()
+}
+
+compile "io.github.resilience4j:resilience4j-circuitbreaker:0.11.0"
+compile "io.github.resilience4j:resilience4j-ratelimiter:0.11.0"
+compile "io.github.resilience4j:resilience4j-retry:0.11.0"
+compile "io.github.resilience4j:resilience4j-bulkhead:0.11.0"
+compile "io.github.resilience4j:resilience4j-cache:0.11.0"
+compile "io.github.resilience4j:resilience4j-timelimiter:0.11.0"
+2.1.2. Snapshot
+repositories {
+   maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local/' }
+}
+
+
+2.2. Maven
+2.2.1. Release
+<repositories>
+    <repository>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
+        <id>jcenter-releases</id>
+        <name>jcenter</name>
+        <url>http://jcenter.bintray.com</url>
+    </repository>
+</repositories>
+
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-circuitbreaker</artifactId>
+    <version>0.11.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-ratelimiter</artifactId>
+    <version>0.11.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-retry</artifactId>
+    <version>0.11.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-bulkhead</artifactId>
+    <version>0.11.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-cache</artifactId>
+    <version>0.11.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-timelimiter</artifactId>
+    <version>0.11.0</version>
+</dependency>
+2.2.2. Snapshot
+<repositories>
+    <repository>
+      <id>jcenter-snapshots</id>
+      <name>jcenter</name>
+      <url>http://oss.jfrog.org/artifactory/oss-snapshot-local/</url>
+    </repository>
+</repositories>
+
+
+3.1. CircuitBreaker
+3.1.1. Introduction
+	CircuitBreaker的创建由InMemoryCircuitBreakerRegistry开始，其中ConcurrentHashMap属性保存CircuitBreaker名称和实例，我们可以通过
+CircuitBreakerRegistry 接口操作CircuitBreaker 实例。
+可以使用默认的全局CircuitBreakerConfig创建CircuitBreakerRegistry以提供给所有的CircuitBreaker实例。
+
+3.1.2. Set-Up
+CircuitBreakerRegistry circuitBreakerRegistry = CircuitBreakerRegistry.ofDefaults();
+同时，你可以使用CircuitBreakerConfig builder定制全局CircuitBreakerConfig，参数如下：
+the failure rate threshold in percentage above which the CircuitBreaker should trip open and start short-circuiting calls
+
+the wait duration which specifies how long the CircuitBreaker should stay open, before it switches to half open
+
+the size of the ring buffer when the CircuitBreaker is half open
+
+the size of the ring buffer when the CircuitBreaker is closed
+
+a custom CircuitBreakerEventListener which handles CircuitBreaker events
+
+a custom Predicate which evaluates if an exception should be recorded as a failure and thus increase the failure rate
+
+// Create a custom configuration for a CircuitBreaker
+CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+    .failureRateThreshold(50)
+    .waitDurationInOpenState(Duration.ofMillis(1000))
+    .ringBufferSizeInHalfOpenState(2)
+    .ringBufferSizeInClosedState(2)
+    .build();
+
+// Create a CircuitBreakerRegistry with a custom global configuration
+CircuitBreakerRegistry circuitBreakerRegistry = CircuitBreakerRegistry.of(circuitBreakerConfig);
+
+// Get a CircuitBreaker from the CircuitBreakerRegistry with the global default configuration
+CircuitBreaker circuitBreaker2 = circuitBreakerRegistry.circuitBreaker("otherName");
+
+// Get a CircuitBreaker from the CircuitBreakerRegistry with a custom configuration
+CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker("uniqueName", circuitBreakerConfig);
+
+如果不想使用CircuitBreakerRegistry操作CircuitBreaker实例，你可以用以下的方式直接创建：
+
+CircuitBreaker defauktCircuitBreaker = CircuitBreaker.ofDefaults("testName");
+
+CircuitBreaker customCircuitBreaker = CircuitBreaker.of("testName", circuitBreakerConfig);
+
+3.1.3. Examples
+	你可以用CircuitBreaker.decorateCheckedSupplier(), CircuitBreaker.decorateCheckedRunnable() or CircuitBreaker.decorateCheckedFunction()
+装饰Supplier / Runnable / Function or CheckedRunnable / CheckedFunction，你可以使用Try.of(…​) or Try.run(…​)调用被装饰的函数。可以使用
+map, flatMap, filter, recover or andThen链式调用。但是只有在CircuitBreaker处于CLOSED or HALF_OPEN状态时才能进行链式调用。
+以下的例子中，成功则Try.of(…​)返回一个Success<String> Monad，如果函数抛出异常则返回一个Failure<Throwable> Monad并且map不会被调用。
+
+// Given
+CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("testName");
+
+// When I decorate my function
+CheckedFunction0<String> decoratedSupplier = CircuitBreaker
+        .decorateCheckedSupplier(circuitBreaker, () -> "This can be any method which returns: 'Hello");
+
+// and chain an other function with map
+Try<String> result = Try.of(decoratedSupplier)
+                .map(value -> value + " world'");
+
+// Then the Try Monad returns a Success<String>, if all functions ran successfully.
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("This can be any method which returns: 'Hello world'");
+
+你也可以将不同CircuitBreakers装饰的函数链接起来：
+
+// Given
+CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("testName");
+CircuitBreaker anotherCircuitBreaker = CircuitBreaker.ofDefaults("anotherTestName");
+
+// When I create a Supplier and a Function which are decorated by different CircuitBreakers
+CheckedFunction0<String> decoratedSupplier = CircuitBreaker
+        .decorateCheckedSupplier(circuitBreaker, () -> "Hello");
+
+CheckedFunction1<String, String> decoratedFunction = CircuitBreaker
+        .decorateCheckedFunction(anotherCircuitBreaker, (input) -> input + " world");
+
+// and I chain a function with map
+Try<String> result = Try.of(decoratedSupplier)
+        .mapTry(decoratedFunction::apply);
+
+// Then
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("Hello world");
+
+CircuitBreaker and RxJava
+以下例子展示如何通过定制化的RxJava operator装饰Observable ：
+CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("backendName");
+Observable.fromCallable(backendService::doSomething)
+    .lift(CircuitBreakerOperator.of(circuitBreaker))
+	
+OPEN CircuitBreaker example
+在这个例子中map不会被调用，因为CircuitBreaker状态为OPEN。对Try.of的调用返回Failure<Throwable> Monad，因此链式函数
+没有被调用。
+
+// Given
+CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+        .ringBufferSizeInClosedState(2)
+        .waitDurationInOpenState(Duration.ofMillis(1000))
+        .build();
+CircuitBreaker circuitBreaker = CircuitBreaker.of("testName", circuitBreakerConfig);
+
+// Simulate a failure attempt
+circuitBreaker.onError(0, new RuntimeException());
+// CircuitBreaker is still CLOSED, because 1 failure is allowed
+assertThat(circuitBreaker.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
+// Simulate a failure attempt
+circuitBreaker.onError(0, new RuntimeException());
+// CircuitBreaker is OPEN, because the failure rate is above 50%
+assertThat(circuitBreaker.getState()).isEqualTo(CircuitBreaker.State.OPEN);
+
+// When I decorate my function and invoke the decorated function
+Try<String> result = Try.of(CircuitBreaker.decorateCheckedSupplier(circuitBreaker, () -> "Hello"))
+        .map(value -> value + " world");
+
+// Then the call fails, because CircuitBreaker is OPEN
+assertThat(result.isFailure()).isTrue();
+// Exception is CircuitBreakerOpenException
+assertThat(result.failed().get()).isInstanceOf(CircuitBreakerOpenException.class);
+
+Recover from an exception
+如果想从异常恢复，可以追加Try.recover()方法，recovery()仅在Try.of()返回Failure<Throwable> Monad时被调用。
+
+// Given
+CircuitBreaker circuitBreaker = CircuitBreaker.ofDefaults("testName");
+
+// When I decorate my function and invoke the decorated function
+CheckedFunction0<String> checkedSupplier = CircuitBreaker.decorateCheckedSupplier(circuitBreaker, () -> {
+    throw new RuntimeException("BAM!");
+});
+Try<String> result = Try.of(checkedSupplier)
+        .recover(throwable -> "Hello Recovery");
+
+// Then the function should be a success, because the exception could be recovered
+assertThat(result.isSuccess()).isTrue();
+// and the result must match the result of the recovery function.
+assertThat(result.get()).isEqualTo("Hello Recovery");
+
+Customize the exception handler
+	默认exception handler将所有类型的异常作失败统计并触发CircuitBreaker，你可以实现Predicate函数式接口来定制
+exception handler。Predicate返回成功则异常被统计为failure,否则应该返回false。
+下面的例子展示了如何忽略IOException：
+
+// Given
+CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+        .ringBufferSizeInClosedState(2)
+        .ringBufferSizeInHalfOpenState(2)
+        .waitDurationInOpenState(Duration.ofMillis(1000))
+        .recordFailure(throwable -> Match(throwable).of(
+                Case($(instanceOf(WebServiceException.class)), true),
+                Case($(), false)))
+        .build();
+CircuitBreaker circuitBreaker = CircuitBreaker.of("testName", circuitBreakerConfig);
+
+// Simulate a failure attempt
+circuitBreaker.onError(0, new WebServiceException());
+// CircuitBreaker is still CLOSED, because 1 failure is allowed
+assertThat(circuitBreaker.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
+
+//When
+CheckedRunnable checkedRunnable = CircuitBreaker.decorateCheckedRunnable(circuitBreaker, () -> {
+    throw new SocketTimeoutException("BAM!");
+});
+Try result = Try.run(checkedRunnable);
+
+//Then
+assertThat(result.isFailure()).isTrue();
+// CircuitBreaker is still CLOSED, because SocketTimeoutException has not been recorded as a failure
+assertThat(circuitBreaker.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
+assertThat(result.failed().get()).isInstanceOf(IOException.class);
+
+Consume emitted CircuitBreakerEvents
+
+CircuitBreaker产生一连串的CircuitBreakerEvents，CircuitBreakerEvent 可以是一个状态转换，成功的调用，一个错误记录或一个被忽略的错误。
+所有的事件都包含一些附加信息，如创建时间，处理时长。你需要注册一个event consumer来消费事件。
+
+circuitBreaker.getEventPublisher()
+    .onSuccess(event -> logger.info(...))
+    .onError(event -> logger.info(...))
+    .onStateTransition(event -> logger.info(...));
+	
+你可以使用CircularEventConsumer将事件存储在一个固定大小的循环缓冲池中:
+
+CircularEventConsumer<CircuitBreakerEvent> ringBuffer = new CircularEventConsumer<>(10);
+circuitBreaker.getEventPublisher().onEvent(ringBuffer);
+List<CircuitBreakerEvent> bufferedEvents = ringBuffer.getBufferedEvents()
+
+可以通过RxJava或Spring Reactor Adapters将EventPublisher转换为一个Reactive Stream，Reactive Stream的优势在于可以使用RxJava的observeOn 
+操作来指定一个发送通知到observers/consumers的不同的程序调度计划。
+
+RxJava2Adapter.toFlowable(circuitBreaker.getEventPublisher())
+    .filter(event -> event.getEventType() == Type.ERROR)
+    .cast(CircuitBreakerOnErrorEvent.class)
+    .subscribe(event -> logger.info(...))
+	
+3.1.4. Monitoring
+CircuitBreaker提供了接口来操作当前度量参数。
+
+CircuitBreaker.Metrics metrics = circuitBreaker.getMetrics();
+// Returns the failure rate in percentage.
+float failureRate = metrics.getFailureRate();
+// Returns the current number of buffered calls.
+int bufferedCalls = metrics.getNumberOfBufferedCalls();
+// Returns the current number of failed calls.
+int failedCalls = metrics.getNumberOfFailedCalls();
+
+
+
+
+
+3.3. Bulkhead
+3.3.1. Introduction
+实现了舱壁模式来限制并行处理的数量-如果后端调用下端依赖，bulkhead提供依赖隔离和减载。对CPU受限的场景，bulkhead仅提供减载功能。
+
+舱壁的抽象在各种线程和IO模型中很适用，它基于semaphore，没有"shadow"线程池的概念。由客户端配置舱壁参数确保正确的线程池策略。
+
+3.3.2. Set-Up
+与CircuitBreaker一样，Bulkhead可以通过InMemoryBulkheadRegistry操作Bulkhead实例。
+BulkheadRegistry bulkheadRegistry = BulkheadRegistry.ofDefaults();
+
+同时也可以使用BulkheadConfig builder定制特定的全局BulkheadConfig，可配置的参数有：
+max amount of parallel executions allowed by the bulkhead
+
+max amount of time a thread can be blocked for when attempting to enter a saturated bulkhead
+
+// Create a custom configuration for a Bulkhead
+BulkheadConfig config = BulkheadConfig.custom()
+                                      .maxConcurrentCalls(150)
+                                      .maxWaitTime(100)
+                                      .build();
+
+// Create a BulkheadRegistry with a custom global configuration
+BulkheadRegistry registry = BulkheadRegistry.of(config);
+
+// Get-Or-Create a Bulkhead from the registry - bulkhead will be backed by the default config
+Bulkhead bulkhead1 = registry.bulkhead("foo");
+
+// Get-Or-Create a Bulkhead from the registry, use a custom configuration when creating the bulkhead
+BulkheadConfig custom = BulkheadConfig.custom()
+                                      .maxWaitTime(0)
+                                      .build();
+
+Bulkhead bulkhead2 = registry.bulkhead("bar", custom);
+
+还可以直接使用Bulkhead创建实例：
+Bulkhead bulkhead1 = Bulkhead.ofDefaults("foo");
+
+Bulkhead bulkhead2 = Bulkhead.of(
+                         "bar",
+                         BulkheadConfig.custom()
+                                       .maxConcurrentCalls(50)
+                                       .build()
+                     );
+					 
+					 
+3.3.3. Examples
+
+// Given
+Bulkhead bulkhead = Bulkhead.of("testName", config);
+
+// When I decorate my function
+CheckedFunction0<String> decoratedSupplier = Bulkhead.decorateCheckedSupplier(bulkhead, () -> "This can be any method which returns: 'Hello");
+
+// and chain an other function with map
+Try<String> result = Try.of(decoratedSupplier)
+                        .map(value -> value + " world'");
+
+// Then the Try Monad returns a Success<String>, if all functions ran successfully.
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("This can be any method which returns: 'Hello world'");
+assertThat(bulkhead.getMetrics().getAvailableConcurrentCalls()).isEqualTo(1);
+
+链接不同的Bulkheads and/or CircuitBreakers：
+
+// Given
+Bulkhead bulkhead = Bulkhead.of("test", config);
+Bulkhead anotherBulkhead = Bulkhead.of("testAnother", config);
+
+// When I create a Supplier and a Function which are decorated by different Bulkheads
+CheckedFunction0<String> decoratedSupplier
+    = Bulkhead.decorateCheckedSupplier(bulkhead, () -> "Hello");
+
+CheckedFunction1<String, String> decoratedFunction
+    = Bulkhead.decorateCheckedFunction(anotherBulkhead, (input) -> input + " world");
+
+// and I chain a function with map
+Try<String> result = Try.of(decoratedSupplier)
+                        .mapTry(decoratedFunction::apply);
+
+// Then
+assertThat(result.isSuccess()).isTrue();
+assertThat(result.get()).isEqualTo("Hello world");
+assertThat(bulkhead.getMetrics().getAvailableConcurrentCalls()).isEqualTo(1);
+assertThat(anotherBulkhead.getMetrics().getAvailableConcurrentCalls()).isEqualTo(1);
+
+3.3.4. Dynamic bulkhead reconfiguration
+
+通过changeConfig()可以动态修改bulkhead参数，但是新的maxWaitTime不会影响正在等待许可的线程。
+
+Bulkhead and RxJava
+下面展示如何使用RxJava装饰Observable：
+Bulkhead bulkhead = Bulkhead.ofDefaults("backendName");
+Observable.fromCallable(backendService::doSomething)
+          .lift(BulkheadOperator.of(bulkhead));
+		  
+Saturated Bulkhead example
+在这里被装饰的线程不会被执行，因为Bulkhead已经饱和。
+// Given
+BulkheadConfig config = BulkheadConfig.custom().maxConcurrentCalls(2).build();
+Bulkhead bulkhead = Bulkhead.of("test", config);
+bulkhead.isCallPermitted();
+bulkhead.isCallPermitted();
+
+// When
+CheckedRunnable checkedRunnable = Bulkhead.decorateCheckedRunnable(bulkhead, () -> {throw new RuntimeException("BAM!");});
+Try result = Try.run(checkedRunnable);
+
+//Then
+assertThat(result.isFailure()).isTrue();
+assertThat(result.failed().get()).isInstanceOf(BulkheadFullException.class);
+
+Consume emitted BulkheadEvents（BulkheadEvents消费）
+bulkhead.getEventPublisher()
+    .onCallPermitted(event -> logger.info(...))
+    .onCallRejected(event -> logger.info(...))
+    .onCallFinished(event -> logger.info(...));
+
+3.3.5. Monitoring
+Bulkhead.Metrics metrics = bulkhead.getMetrics();
+// Returns the number of parallel executions this bulkhead can support at this point in time.
+in remainingBulkheadDepth = metrics.getAvailableConcurrentCalls()
+
+
+

@@ -48,3 +48,4 @@ keytool -importcert -alias servercert -file server.crt -keystore servertrust.jks
 把Server证书加到对外KeyStore里面。  
 
 https://blog.csdn.net/kimylrong/article/details/43525333  
+https://snowolf.iteye.com/blog/510985  

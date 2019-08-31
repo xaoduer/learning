@@ -1,0 +1,42 @@
+jcmd 
+打印java进程的基本类，线程和VM信息
+jstat 
+提供GC和类装载活动的信息
+
+GC日志
+-verbose:gc/-XX:PrintGC   互为别名，创建GC日志
+-XX:PrintGCDetails   详细GC
+-XX:PrintGCTimeStamps/-XX:PrintGCDateStamps   更精确的判断几次GC操作之间的时间
+-Xloggc:filename
+-XX:+UseGCLogfileRotation -XX:NumberOfGCLogfiles=N -XX:GCLogfileSize=N  控制日志文件的循环
+
+dump文件
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=<path>
+-XX:+HeapDumpAfterFullGC
+-XX:+HeapDumpBeforeFullGC
+
+
+内存分析步骤：
+shallow,deep,retained
+1.Overview
+2.引用树dominator_tree，查看保留内存
+3.histogram
+
+内存溢出：
+JVM没有原生内存可用
+永久带或元空间内存不足
+java堆本身内存不足——应用中活跃对象太多
+jvm执行GC耗时太多
+
+
+原生内存跟踪
+-XX:NativeMemoryTracking=off|summary|detail
+jcmd process_id VM.native_memory summary|detail
+-XX:+PrintNMTStatistics 程序退出时打印
+
+NMT跟踪
+jcmd process_id VM.native_memory baseline --> jcmd process_id VM.native_memory summary.diff
+
+-agentlib:jdwp=transport=dt_shmem,server=y,address=10000
+
