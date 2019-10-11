@@ -1,3 +1,26 @@
+docker save -o xxx.tar 镜像名
+docker load -i alpine_3.10.2_arm64v8.tar
+docker build -t alpine-arm64v8-glibc-ext:3.10.2 .
+docker run -it alpine-arm64v8-glibc-ext:3.10.2 /bin/sh
+docker run --name myalpine02 -dt alpine-arm64v8-glibc-ext:3.10.2
+apk add --allow-untrusted 
+
+
+RUN echo http://mirrors.zte.com.cn/alpine/v3.10/main > /etc/apk/repositories 
+RUN echo http://mirrors.zte.com.cn/alpine/v3.10/community  >> /etc/apk/repositories
+
+echo http://mirrors.ustc.edu.cn/alpine/v3.10/main > /etc/apk/repositories \
+echo http://mirrors.ustc.edu.cn/alpine/v3.10/community  >> /etc/apk/repositories
+
+RUN echo http://mirrors.ustc.edu.cn/alpine/v3.10/main > /etc/apk/repositories \
+RUN echo http://mirrors.ustc.edu.cn/alpine/v3.10/community  >> /etc/apk/repositories
+
+
+
+
+
+
+
 Docker自动获取系统变量配置文件:D:\projects-spring\msa\msa-integration\assembly\src\etc\dockerfile\
 
 命令:
@@ -164,6 +187,7 @@ memory.memsw.limit_in_bytes	限制的内存和swap容量(字节)
 memory.memsw.failcnt	申请内存和swap失败次数计数
 memory.stat	内存相关状态
 
-apk : http://10.89.208.228:80
-echo http://10.89.208.228:80/alpine/v3.8/main > /etc/apk/repositories \
-echo http://10.89.208.228:80/alpine/v3.8/community  >> /etc/apk/repositories
+
+
+
+
